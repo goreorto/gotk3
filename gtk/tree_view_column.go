@@ -7,6 +7,7 @@ package gtk
 // #include "gtk.go.h"
 import "C"
 import (
+	"sync"
 	"unsafe"
 
 	"github.com/gotk3/gotk3/glib"
@@ -257,7 +258,6 @@ func (v *TreeViewColumn) GetXOffset() int {
 }
 
 // void 	gtk_tree_view_column_set_attributes ()
-// void 	gtk_tree_view_column_set_cell_data_func ()
 
 type TreeViewColumnSizing int
 
@@ -266,6 +266,42 @@ const (
 	TREE_VIEW_COLUMN_AUTOSIZE                       = C.GTK_TREE_VIEW_COLUMN_AUTOSIZE
 	TREE_VIEW_COLUMN_FIXED                          = C.GTK_TREE_VIEW_COLUMN_FIXED
 )
+
+// void 	gtk_tree_view_column_set_cell_data_func ()
+
+type TreeColumnCellDataFunc func(tree_column *TreeViewColumn, cell *CellRenderer, tree_model *TreeModel, iter *TreeIter, userData ...interface{})
+
+type treeColumnCellDataFuncData struct {
+	fn       TreeColumnCellDataFunc
+	userData []interface{}
+}
+
+var (
+	treeViewColumnCellDataFuncRegistry = struct {
+		sync.RWMutex
+		next int
+		m    map[int]treeColumnCellDataFuncData
+	}{
+		next: 1,
+		m:    make(map[int]treeColumnCellDataFuncData),
+	}
+)
+
+// void 	gtk_tree_view_column_set_cell_data_func ()
+func (v *TreeViewColumn) SetCellDataFunc(cell_renderer *CellRenderer, f TreeColumnCellDataFunc, userData ...interface{}) {
+	treeViewColumnCellDataFuncRegistry.Lock()
+	id := treeViewColumnCellDataFuncRegistry.next
+	treeViewColumnCellDataFuncRegistry.next++
+	treeViewColumnCellDataFuncRegistry.m[id] = treeColumnCellDataFuncData{fn: f, userData: userData}
+	treeViewColumnCellDataFuncRegistry.Unlock()
+
+	C._gtk_tree_view_column_set_cell_data_func(v.native(), cell_renderer.native(), C.gpointer(uintptr(id)))
+
+	// NOTE: need to clean up after v has been gc'ed
+	//treeViewColumnCellDataFuncRegistry.Lock()
+	//delete(treeViewColumnCellDataFuncRegistry.m, id)
+	//treeViewColumnCellDataFuncRegistry.Unlock()
+}
 
 // void 	gtk_tree_view_column_set_sizing ()
 func (v *TreeViewColumn) SetSizing(sizing TreeViewColumnSizing) {

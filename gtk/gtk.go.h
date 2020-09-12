@@ -1060,3 +1060,9 @@ extern void goTreeSelectionForeachFunc(GtkTreeModel *model, GtkTreePath *path, G
 static inline void _gtk_tree_selection_selected_foreach(GtkTreeSelection *selection, gpointer user_data) {
     gtk_tree_selection_selected_foreach(selection, (GtkTreeSelectionForeachFunc)(goTreeSelectionForeachFunc), user_data);
 }
+
+extern void goTreeViewColumnCellDataFunc(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
+
+static inline void _gtk_tree_view_column_set_cell_data_func(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell_renderer, gpointer user_data) {
+    gtk_tree_view_column_set_cell_data_func(tree_column, cell_renderer, (GtkTreeCellDataFunc)(goTreeViewColumnCellDataFunc), user_data, NULL);
+}

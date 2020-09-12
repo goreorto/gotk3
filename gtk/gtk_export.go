@@ -165,3 +165,20 @@ func goTreeSelectionForeachFunc(model *C.GtkTreeModel, path *C.GtkTreePath, iter
 		goIter,
 		r.userData)
 }
+
+//export goTreeViewColumnCellDataFunc
+func goTreeViewColumnCellDataFunc(tree_column *C.GtkTreeViewColumn, cell *C.GtkCellRenderer, tree_model *C.GtkTreeModel, iter *C.GtkTreeIter, data C.gpointer) {
+	id := int(uintptr(data))
+
+	treeViewColumnCellDataFuncRegistry.RLock()
+	r := treeViewColumnCellDataFuncRegistry.m[id]
+	treeViewColumnCellDataFuncRegistry.RUnlock()
+
+	goIter := &TreeIter{(C.GtkTreeIter)(*iter)}
+	r.fn(
+		wrapTreeViewColumn(glib.Take(unsafe.Pointer(tree_column))),
+		wrapCellRenderer(glib.Take(unsafe.Pointer(cell))),
+		wrapTreeModel(glib.Take(unsafe.Pointer(tree_model))),
+		goIter,
+		r.userData)
+}
